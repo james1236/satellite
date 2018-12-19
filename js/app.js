@@ -1,6 +1,7 @@
 function init() {
 	var earthScaleFactor = 20;
 	var sunScaleFactor = 1000000;
+	var speed = 1;
 
 	var scene = new THREE.Scene();
 	//										 fov                  dimension ratio          ncp  fcp    (near/far clipping planes)
@@ -21,29 +22,28 @@ function init() {
 	
 	//---Resources---
 	var panelMaterial = new THREE.MeshPhongMaterial({
-		map: new THREE.TextureLoader().load("img/panel.jpg"),
-		side: THREE.FrontSide
+		map: new THREE.TextureLoader().load("img/panelDouble.jpg"),
+		side: THREE.FrontSide,
+		bumpMap: THREE.ImageUtils.loadTexture('img/panelDoubleBumpMap.jpg'),
+		bumpScale: 0.01,
 	});
+	
 	vesselMaterial = new THREE.MeshLambertMaterial({
 		map: new THREE.TextureLoader().load("img/vessel.jpg"),
 		side: THREE.FrontSide
 	});
+	
 			
 	var dragonSpaceshipResources = {
 		geometry: {
-			sectionGeometry: new THREE.CylinderGeometry(5,5,10,9),
-			torusGeometry: new THREE.TorusGeometry(1.5, 0.7, 4, 16),
-			coneGeometry: new THREE.CylinderGeometry(2.5,5,6,9),
-			panelConnectorGeometry: new THREE.CylinderGeometry(0.2,0.2,10.4),
-			miniPanelConnectorGeometry: new THREE.CylinderGeometry(0.2,0.2,0.4),
+			sectionGeometry: new THREE.CylinderGeometry(5,5,10,8),
+			torusGeometry: new THREE.TorusGeometry(1.5, 0.7, 4, 8),
+			coneGeometry: new THREE.CylinderGeometry(2.5,5,6,8),
+			miniPanelConnectorGeometry: new THREE.CylinderGeometry(0.15,0.15,0.4),
 			panelGeometry: new THREE.BoxGeometry(10,5,0.2),
 		},		
 		materials: {
 			vesselMaterial: vesselMaterial,
-			panelMaterial: new THREE.MeshLambertMaterial({
-				map: new THREE.TextureLoader().load("img/panel.jpg"),
-				side: THREE.FrontSide
-			}),
 			panelMaterials: [
 				panelMaterial, 
 				panelMaterial, 
@@ -61,7 +61,7 @@ function init() {
 			}),
 			coneMaterials: [
 				vesselMaterial, 
-				new THREE.MeshLambertMaterial({
+				new THREE.MeshPhongMaterial({
 					map: new THREE.TextureLoader().load("img/innerFoil.jpg"),
 					side: THREE.FrontSide
 				})
@@ -77,8 +77,17 @@ function init() {
 	
 	var skyboxGeometry = new THREE.SphereGeometry((350000000000/2)/sunScaleFactor, 8, 8);
 	
+	//waterColor = [0.278,0.545,0.95];
+	waterColor = [11/255,46/255,74/255];
+	//terrainColor = [0.259,0.956,0.37];
+	terrainColor = [72/255,107/255,43/255];
+		
 	for (index = 0; index < earthGeometry.faces.length; index++) {
-		earthGeometry.faces[index].color = new THREE.Color(0.278+(randInt(50)-25)/1000,0.545+(randInt(50)-25)/1000,0.95);
+		if (randInt(3) != 0) {
+			earthGeometry.faces[index].color = new THREE.Color(waterColor[0]+(randInt(50)-25)/1000,waterColor[1]+(randInt(50)-25)/1000,waterColor[2]);
+		} else {
+			earthGeometry.faces[index].color = new THREE.Color(terrainColor[0]+(randInt(100))/1000, terrainColor[1], terrainColor[2]+(randInt(100))/1000);
+		}
 	}
 
 	
@@ -138,10 +147,18 @@ function init() {
 	sun.position.z = 140000000000/sunScaleFactor;
 	scene.add(sun);		
 	
+	setInterval(perSecond,1000);
+	
+	function perSecond() {
+		earth.rotation.y  += ((1/360)/240)*speed;
+		earthAtmosphere.rotation.y  += ((1/360)/120)*speed;
+	}
+	
 	var skybox = new THREE.Mesh(skyboxGeometry,skyboxMaterial);
 	//scene.add(skybox);	
 	
 	//Dragon Spaceship
+	
 	function createDragonSpaceship() {
 		//Main body
 		dragonSpaceshipBody = new THREE.Mesh(dragonSpaceshipResources.geometry.sectionGeometry,dragonSpaceshipResources.materials.vesselMaterial);
@@ -158,51 +175,82 @@ function init() {
 		dragonSpaceshipBody.add(sepTorus);	
 		
 		//Solar array 1
-		panels1 = createSolarPanelArray(3);
-		panels1.rotation.z = -Math.PI / 2;
-		panels1.position.x = 5;
-		dragonSpaceshipBody.add(panels1);	
+		solarPanelArray1 = createSolarPanelArray(4);
+		solarPanelArray1.panels[0].rotation.z = -Math.PI / 2;
+		solarPanelArray1.panels[0].position.x = 5;
+		dragonSpaceshipBody.add(solarPanelArray1.panels[0]);	
 		
 		//Solar array 2
-		panels2 = createSolarPanelArray(3);
-		panels2.rotation.z = +Math.PI / 2;
-		panels2.position.x = -5;
-		dragonSpaceshipBody.add(panels2);	
+		solarPanelArray2 = createSolarPanelArray(4);
+		solarPanelArray2.panels[0].rotation.z = +Math.PI / 2;
+		solarPanelArray2.panels[0].position.x = -5;
+		dragonSpaceshipBody.add(solarPanelArray2.panels[0]);	
 		
-		return dragonSpaceshipBody;
+		dragonSpaceship = {
+			body: dragonSpaceshipBody,
+			solarPanelArrays: [solarPanelArray1,solarPanelArray2],
+		}
+		
+		return dragonSpaceship;
 	}
 	
 	function createSolarPanelArray(size) {
-		//size = amount of solar panels
-		mainPanelConnector = new THREE.Mesh(dragonSpaceshipResources.geometry.miniPanelConnectorGeometry,dragonSpaceshipResources.materials.connectorMaterial);
-		firstPanel = new THREE.Mesh(dragonSpaceshipResources.geometry.panelGeometry,dragonSpaceshipResources.materials.panelMaterials);
-		firstPanel.position.y = 2.7;
-		mainPanelConnector.add(firstPanel);
+		if (size <= 0) {
+			return;
+		}
+		panelsArray = [];
 		
-		lastPanel = firstPanel;
+		panelsArray.push(new THREE.Mesh(dragonSpaceshipResources.geometry.miniPanelConnectorGeometry,dragonSpaceshipResources.materials.connectorMaterial));
+		panelsArray.push(new THREE.Mesh(dragonSpaceshipResources.geometry.panelGeometry,dragonSpaceshipResources.materials.panelMaterials));
+		panelsArray[1].position.y = 2.7;
+		panelsArray[0].add(panelsArray[1]);
+
 		for (index = 1; index < size; index++) {
-			panelConnector = new THREE.Mesh(dragonSpaceshipResources.geometry.miniPanelConnectorGeometry,dragonSpaceshipResources.materials.connectorMaterial);
-			panelConnector.position.y = 2.65;
-			lastPanel.add(panelConnector);
-			nextPanel = new THREE.Mesh(dragonSpaceshipResources.geometry.panelGeometry,dragonSpaceshipResources.materials.panelMaterials);
-			nextPanel.position.y = 2.7;
-			panelConnector.add(nextPanel);
-			
-			lastPanel = nextPanel;
+			panelsArray.push(new THREE.Mesh(dragonSpaceshipResources.geometry.miniPanelConnectorGeometry,dragonSpaceshipResources.materials.connectorMaterial));
+			panelsArray[panelsArray.length-1].position.y = 2.65;
+			panelsArray[panelsArray.length-2].add(panelsArray[panelsArray.length-1]);
+			panelsArray.push(new THREE.Mesh(dragonSpaceshipResources.geometry.panelGeometry,dragonSpaceshipResources.materials.panelMaterials));
+			panelsArray[panelsArray.length-1].position.y = 2.7;
+			panelsArray[panelsArray.length-2].add(panelsArray[panelsArray.length-1]);
 			
 			if (index == size-1) {
 				//nextPanel.rotation.x = Math.PI / 2;
 			}
 		}
 		
-		return mainPanelConnector;
+		solarPanelArray = {
+			panels: panelsArray,
+			progress: 50,
+		}
+		
+		return solarPanelArray;
+	}
+	
+	function foldSolarPanelArray(solarPanelArray) {
+		//mainPanelConnector.position.z += dragonSpaceshipResources.geometry.panelGeometry.parameters.width/2;
+		even = true;
+		
+		progress = solarPanelArray.progress;
+		
+		for (index = 2; index < solarPanelArray.panels.length; index+=2) {
+			solarPanelArray.panels[index].rotation.x = (even) ? Math.PI / progress : -Math.PI / progress;
+			solarPanelArray.panels[index].position.z += (even) ? solarPanelArray.panels[index].geometry.parameters.radiusTop*2 : -solarPanelArray.panels[index].geometry.parameters.radiusTop*2;
+			
+			even = !even;
+		}
 	}
 	
 	var dragonSpaceship = createDragonSpaceship();
-	scene.add(dragonSpaceship);	
+	
+	dragonSpaceship.solarPanelArrays[1].progress = 1;
+	
+	foldSolarPanelArray(dragonSpaceship.solarPanelArrays[0]);
+	foldSolarPanelArray(dragonSpaceship.solarPanelArrays[1]);
+	
+	scene.add(dragonSpaceship.body);	
 	
 
-	var globalLight = new THREE.AmbientLight("#ffffff",0.5);
+	var globalLight = new THREE.AmbientLight("#ffffff",0.3);
 	scene.add(globalLight);
 	
 	var sunlight = new THREE.DirectionalLight("#ffffff", 1);
@@ -219,7 +267,7 @@ function init() {
 		//dragonSpaceship.rotation.z+=0.0001;
 		//dragonSpaceship.rotation.y+=0.001;
 		
-		controls.update();    
+		controls.update();  	
 	}
 	
 	function render() {

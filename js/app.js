@@ -1,3 +1,56 @@
+/*
+
+	CSG
+
+	var internalGeometry = mesh...
+	var externalGeometry = mesh...
+
+	var internalBSP = new ThreeBSP(internalGeometry);
+	var externalBSP = new ThreeBSP(externalGeometry);
+	var intersectionBSP = externalGeometry.subtract(internalGeometry);      
+
+	scene.add(intersectionBSP.toMesh(material));
+	
+	
+	
+	
+	//CSG
+	
+	//Creating Geometries
+	//                                                radT radB height segR segH caps
+	var internalGeometry = new THREE.CylinderGeometry(4.5, 4.5, 8,    10,  50,   false);
+	var externalGeometry = new THREE.CylinderGeometry(5  , 5,   10,   10,  50,   false);
+
+	//Creating Intermediary Meshes (allows for pre CSG transformations)
+	var internalIntermediaryMesh = new THREE.Mesh(internalGeometry);
+	var externalIntermediaryMesh = new THREE.Mesh(externalGeometry);
+	//internalIntermediaryMesh.rotation.y = 0.0;
+	
+
+	
+	//Creating CSGs from interm meshes
+	var internalBSP = new ThreeBSP(internalIntermediaryMesh);
+	var externalBSP = new ThreeBSP(externalIntermediaryMesh);
+	
+	//Creating CSG intersection
+	var intersectionBSP = externalBSP.subtract(internalBSP); 
+	
+	//Creating normal intersection
+	var intersection = intersectionBSP.toMesh(csgDemoMaterial);	
+
+	scene.add(intersection);
+	
+	var testExternal = new THREE.Mesh(externalGeometry, csgDemoMaterial);
+	scene.add(testExternal);	
+	var testInternal = new THREE.Mesh(internalGeometry, csgDemoMaterial);
+	scene.add(testInternal);
+	
+	intersection.position.x = 50;
+	testExternal.position.x = 50;
+	
+*/
+
+
 function init() {
 	var earthScaleFactor = 20;
 	var sunScaleFactor = 1000000;
@@ -26,6 +79,12 @@ function init() {
 		side: THREE.FrontSide,
 		bumpMap: THREE.ImageUtils.loadTexture('img/panelDoubleBumpMap.jpg'),
 		bumpScale: 0.01,
+	});	
+	
+	var csgDemoMaterial = new THREE.MeshLambertMaterial({
+		map: new THREE.TextureLoader().load("img/vessel.jpg"),
+		side: THREE.DoubleSide,
+		wireframe:false,
 	});
 	
 	vesselMaterial = new THREE.MeshLambertMaterial({
@@ -37,9 +96,10 @@ function init() {
 	var dragonSpaceshipResources = {
 		geometry: {
 			sectionGeometry: new THREE.CylinderGeometry(5,5,10,8),
-			torusGeometry: new THREE.TorusGeometry(1.5, 0.7, 4, 8),
+			hatchGeometry: new THREE.TorusGeometry(1.5, 0.7, 4, 8),
 			coneGeometry: new THREE.CylinderGeometry(2.5,5,6,8),
-			miniPanelConnectorGeometry: new THREE.CylinderGeometry(0.15,0.15,0.4),
+			panelConnectorGeometry: new THREE.CylinderGeometry(0.15,0.15,0.4),
+			hatchConnectorGeometry: new THREE.CylinderGeometry(0.2,0.2,0.4),
 			panelGeometry: new THREE.BoxGeometry(10,5,0.2),
 		},		
 		materials: {
@@ -168,11 +228,18 @@ function init() {
 		cone.position.y = 8;
 		dragonSpaceshipBody.add(cone);
 
-		//Docking Port Torus Shape at top
-		sepTorus = new THREE.Mesh(dragonSpaceshipResources.geometry.torusGeometry,dragonSpaceshipResources.materials.vesselMaterial);
-		sepTorus.rotation.x = Math.PI / 2;
-		sepTorus.position.y = 11;
-		dragonSpaceshipBody.add(sepTorus);	
+		//Docking Port hatch Shape at top
+		hatchConnector = new THREE.Mesh(dragonSpaceshipResources.geometry.hatchConnectorGeometry,dragonSpaceshipResources.materials.connectorMaterial);
+		hatchConnector.rotation.x = Math.PI / 2;
+		hatchConnector.position.y = 11;
+		hatchConnector.position.x = 2;
+		dragonSpaceshipBody.add(hatchConnector);			
+		
+		hatch = new THREE.Mesh(dragonSpaceshipResources.geometry.hatchGeometry,dragonSpaceshipResources.materials.vesselMaterial);
+		//hatch.rotation.x = Math.PI / 2;
+		//hatch.position.y = 11;
+		hatch.position.x = -2;
+		hatchConnector.add(hatch);	
 		
 		//Solar array 1
 		solarPanelArray1 = createSolarPanelArray(4);
@@ -188,6 +255,8 @@ function init() {
 		
 		dragonSpaceship = {
 			body: dragonSpaceshipBody,
+			hatchConnector: hatchConnector,
+			
 			solarPanelArrays: [solarPanelArray1,solarPanelArray2],
 		}
 		
@@ -200,13 +269,13 @@ function init() {
 		}
 		panelsArray = [];
 		
-		panelsArray.push(new THREE.Mesh(dragonSpaceshipResources.geometry.miniPanelConnectorGeometry,dragonSpaceshipResources.materials.connectorMaterial));
+		panelsArray.push(new THREE.Mesh(dragonSpaceshipResources.geometry.panelConnectorGeometry,dragonSpaceshipResources.materials.connectorMaterial));
 		panelsArray.push(new THREE.Mesh(dragonSpaceshipResources.geometry.panelGeometry,dragonSpaceshipResources.materials.panelMaterials));
 		panelsArray[1].position.y = 2.7;
 		panelsArray[0].add(panelsArray[1]);
 
 		for (index = 1; index < size; index++) {
-			panelsArray.push(new THREE.Mesh(dragonSpaceshipResources.geometry.miniPanelConnectorGeometry,dragonSpaceshipResources.materials.connectorMaterial));
+			panelsArray.push(new THREE.Mesh(dragonSpaceshipResources.geometry.panelConnectorGeometry,dragonSpaceshipResources.materials.connectorMaterial));
 			panelsArray[panelsArray.length-1].position.y = 2.65;
 			panelsArray[panelsArray.length-2].add(panelsArray[panelsArray.length-1]);
 			panelsArray.push(new THREE.Mesh(dragonSpaceshipResources.geometry.panelGeometry,dragonSpaceshipResources.materials.panelMaterials));
@@ -220,13 +289,26 @@ function init() {
 		
 		solarPanelArray = {
 			panels: panelsArray,
-			progress: 50,
+			opening: true,
+			closing: false,
+			progress: 1,
+			
+			power: {
+				active: true,
+				powerFullfilmentPercentage: 0,
+				
+				activePowerConsumption: 10,
+				inactivePowerConsumption: 0,
+				
+				activePowerProduction: 0,
+				inactivePowerProduction: 0,
+			}
 		}
 		
 		return solarPanelArray;
 	}
 	
-	function foldSolarPanelArray(solarPanelArray) {
+	function updateFoldPositionSolarPanelArray(solarPanelArray) {
 		//mainPanelConnector.position.z += dragonSpaceshipResources.geometry.panelGeometry.parameters.width/2;
 		even = true;
 		
@@ -234,7 +316,8 @@ function init() {
 		
 		for (index = 2; index < solarPanelArray.panels.length; index+=2) {
 			solarPanelArray.panels[index].rotation.x = (even) ? Math.PI / progress : -Math.PI / progress;
-			solarPanelArray.panels[index].position.z += (even) ? solarPanelArray.panels[index].geometry.parameters.radiusTop*2 : -solarPanelArray.panels[index].geometry.parameters.radiusTop*2;
+			
+			solarPanelArray.panels[index].position.z = (even) ? (solarPanelArray.panels[index].geometry.parameters.radiusTop*2)/progress : (-solarPanelArray.panels[index].geometry.parameters.radiusTop*2)/progress;
 			
 			even = !even;
 		}
@@ -242,22 +325,147 @@ function init() {
 	
 	var dragonSpaceship = createDragonSpaceship();
 	
-	dragonSpaceship.solarPanelArrays[1].progress = 1;
-	
-	foldSolarPanelArray(dragonSpaceship.solarPanelArrays[0]);
-	foldSolarPanelArray(dragonSpaceship.solarPanelArrays[1]);
-	
 	scene.add(dragonSpaceship.body);	
+	
+	function tickSolarPanelArray(solarPanelArray) {
+		//Power
+		solarPanelArray.power.active == solarPanelArray.opening || solarPanelArray.closing;
+		
+		solarPanelArray.power.activePowerProduction = solarPanelArray.panels.length/2;
+		solarPanelArray.power.inactivePowerProduction = solarPanelArray.power.activePowerProduction;
+		
+		//solarPanelArray.power.powerFullfilmentPercentage = avaliablePower / (solarPanelArray.power.active) ? solarPanelArray.power.activePowerProduction : solarPanelArray.power.inactivePowerProduction;
+		//avaliablePower -= (solarPanelArray.power.active) ? solarPanelArray.power.activePowerConsumption : solarPanelArray.power.inactivePowerConsumption
+		
+		solarPanelArray.power.powerFullfilmentPercentage = 1;
+				
+		//Opening/Closing
+		if (solarPanelArray.opening) {
+			solarPanelArray.progress+=((solarPanelArray.progress / (2000 * solarPanelArray.panels.length/4)*8)/8)*solarPanelArray.power.powerFullfilmentPercentage;
+			if (solarPanelArray.progress >= 50) {
+				solarPanelArray.opening = false;
+			}
+
+			updateFoldPositionSolarPanelArray(solarPanelArray);
+		}
+		if (solarPanelArray.closing) {
+			solarPanelArray.progress-=((solarPanelArray.progress / (2000 * solarPanelArray.panels.length/4)*8)/8)*solarPanelArray.power.powerFullfilmentPercentage;
+			if (solarPanelArray.progress <= 1) {
+				solarPanelArray.closing = false;
+			}
+			
+			updateFoldPositionSolarPanelArray(solarPanelArray);
+		}
+	}
 	
 
 	var globalLight = new THREE.AmbientLight("#ffffff",0.3);
 	scene.add(globalLight);
 	
-	var sunlight = new THREE.DirectionalLight("#ffffff", 1);
+	/*var sunlight = new THREE.DirectionalLight("#ffffff", 1);
 	sunlight.position.set(0, 1, 2000000000000000);
 	sunlight.castShadow = true;
     sunlight.shadowCameraVisible = true;
-	scene.add(sunlight);
+	scene.add(sunlight);*/
+	
+	
+	var sunlight = new THREE.PointLight("#ffffff", 1);
+	sunlight.castShadow = true;
+	sun.add(sunlight);
+	
+	//CSG
+	
+	//Creating Geometries
+	
+	var tessellateModifier = new THREE.TessellateModifier(5);
+	//var subdivisionModifier = new THREE.SubdivisionModifier(1);
+	
+	//                                                radT radB height segR segH nocaps
+	var internalGeometry = new THREE.CylinderGeometry(4, 4, 10,    10,  1,   true);
+	var externalGeometry = new THREE.CylinderGeometry(5  , 5,   10,    10,  1,   false);
+	var cutawayGeometry = new THREE.BoxGeometry(5,10,28);
+	
+	tessellateModifier.modify(internalGeometry);
+	tessellateModifier.modify(externalGeometry);
+
+	//Creating Intermediary Meshes (allows for pre CSG transformations)
+	var internalIntermediaryMesh = new THREE.Mesh(internalGeometry);
+	var externalIntermediaryMesh = new THREE.Mesh(externalGeometry);
+	var cutawayIntermediaryMesh = new THREE.Mesh(cutawayGeometry);
+
+	cutawayIntermediaryMesh.position.x = -2.501;
+	
+	//Creating CSGs from interm meshes
+	var internalBSP = new ThreeBSP(internalIntermediaryMesh);
+	var externalBSP = new ThreeBSP(externalIntermediaryMesh);
+	var cutawayBSP = new ThreeBSP(cutawayIntermediaryMesh);
+
+	
+	//Creating CSG intersection
+	//var intersectionBSP1 = externalBSP.subtract(internalBSP); 
+	var intersectionBSP2 = externalBSP.subtract(cutawayBSP); 
+	var intersectionBSP1 = internalBSP.subtract(cutawayBSP); 
+	
+	//var intersectionBSP = intersectionBSP1.subtract(cutawayBSP); 
+	var intersectionBSP = intersectionBSP2.subtract(intersectionBSP1); 
+	
+	//Creating normal intersection	
+	var intersectionGeometry = intersectionBSP.toGeometry();		
+	
+	//Fix fucked lighting
+	intersectionGeometry.computeFaceNormals();
+	intersectionGeometry.computeVertexNormals();
+
+
+	var intersection = new THREE.Mesh(intersectionGeometry,csgDemoMaterial);	
+
+	//scene.add(intersection);
+
+	//intersection.position.x = 25;	
+	
+	var intersection2 = new THREE.Mesh(intersectionGeometry,csgDemoMaterial);	
+
+	//scene.add(intersection2);
+
+	//intersection2.position.x = 25;
+	intersection2.rotation.y = Math.PI;
+
+	//var i1BSP = new ThreeBSP(intersection);
+	//var i2BSP = new ThreeBSP(intersection2);
+	
+	var singleGeometry = new THREE.Geometry();
+	
+	intersection.updateMatrix(); // as needed
+	singleGeometry.merge(intersection.geometry, intersection.matrix);
+
+	intersection2.updateMatrix(); // as needed
+	singleGeometry.merge(intersection2.geometry, intersection2.matrix);
+	
+	singleGeometry.computeFaceNormals();
+	singleGeometry.computeVertexNormals();
+	
+	//var finalE = new THREE.Mesh(singleGeometry, csgDemoMaterial);	
+	//scene.add(finalE);
+	//finalE.position.x = 25;
+	
+	//;
+	var testGeo;
+	
+	var objLoader = new THREE.OBJLoader();
+    objLoader.load('objects/section.obj', function (object) {
+		object.traverse(function (child) {
+			testGeo = child.geometry;
+		});
+		testGeo = new THREE.Geometry().fromBufferGeometry(testGeo);
+		
+		var finalE = new THREE.Mesh(testGeo, csgDemoMaterial);	
+		scene.add(finalE);
+		
+		finalE.scale.x = finalE.scale.y = finalE.scale.z = 0.99;
+		
+		finalE.rotation.x = Math.PI/2;
+		finalE.position.x = 0;
+    });
 	
 	var globalTimer = 0;
 	
@@ -266,6 +474,11 @@ function init() {
 		
 		//dragonSpaceship.rotation.z+=0.0001;
 		//dragonSpaceship.rotation.y+=0.001;
+		
+		//dragonSpaceship.hatchConnector.rotation.y -= 0.001;
+		
+		tickSolarPanelArray(dragonSpaceship.solarPanelArrays[0]);
+		tickSolarPanelArray(dragonSpaceship.solarPanelArrays[1]);
 		
 		controls.update();  	
 	}

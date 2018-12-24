@@ -273,6 +273,7 @@ async function init() {
 			hatchConnector: hatchConnector,
 			
 			solarPanelArrays: [solarPanelArray1,solarPanelArray2],
+			id:id,
 		}
 		
 		return dragonSpaceship;
@@ -383,32 +384,64 @@ async function init() {
 	var globalTimer = 0;
 	
 	//Model Experimentation
+	
+	var id2 = Math.random();
+	
 	gltfLoader.load("objects/node.glb", (gltf) => {
-		//gltf.scene.rotation.x = Math.PI/2;
-		//gltf.scene.scale.x = gltf.scene.scale.y = gltf.scene.scale.z = 0.997;
-		gltf.scene.position.y = 16;
+		gltf.scene.name = id2+"node";
+		gltf.scene.position.y = 16.5;
 		scene.add(gltf.scene);
 	});		
+	
+	while (true) {
+		await new Promise(resolve => setTimeout(resolve, 100));
+		if (scene.getObjectByName(id2+"node") != undefined) {
+			break;
+		}
+	}
+	
+	var node = scene.getObjectByName(id2+"node");
 	
 	gltfLoader.load("objects/nodeRing.glb", (gltf) => {
-		//gltf.scene.rotation.x = Math.PI/2;
-		//gltf.scene.scale.x = gltf.scene.scale.y = gltf.scene.scale.z = 0.997;
-		gltf.scene.position.y = 16;
-		scene.add(gltf.scene);
+		//Set side of the dock
+		gltf.scene.rotation.x = Math.PI/2;
+		gltf.scene.name = id2+"nodeRing";
+		node.add(gltf.scene);
 	});		
 	
+	while (true) {
+		await new Promise(resolve => setTimeout(resolve, 100));
+		if (scene.getObjectByName(id2+"nodeRing") != undefined) {
+			break;
+		}
+	}
+	
+	var nodeRing = scene.getObjectByName(id2+"nodeRing");
+	
+	var nodeHatchConnector = new THREE.Mesh(dragonSpaceshipResources.geometry.hatchConnectorGeometry,dragonSpaceshipResources.materials.connectorMaterial);
+	
+	//Offset the connector to the side
+	nodeHatchConnector.position.x = 2.5;
+	//Weird positioning because nodeRing is centered on node center. Should really merge nodeRing into node since it has no purpose seperated
+	//-0.25 is the forward offset so it is visible from within the node
+	nodeHatchConnector.position.z = 4.25-0.25;
+	nodeRing.add(nodeHatchConnector);	
+	
 	gltfLoader.load("objects/nodeHatch.glb", (gltf) => {
-		//gltf.scene.rotation.x = Math.PI/2;
-		//gltf.scene.scale.x = gltf.scene.scale.y = gltf.scene.scale.z = 0.997;
-		gltf.scene.position.y = 16;
-		scene.add(gltf.scene);
+		gltf.scene.name = id2+"nodeHatch";
+		//Revert offset
+		gltf.scene.position.x = -2.5;
+		//Revert offset
+		gltf.scene.position.z = 0.25;
+		nodeHatchConnector.add(gltf.scene);
 	});	
 	
 	function tick() {
 		globalTimer++;
 
 		if (dragonSpaceship.body) {
-			dragonSpaceship.hatchConnector.rotation.y -= 0.001;
+			dragonSpaceship.hatchConnector.rotation.y -= 0.0005;
+			nodeHatchConnector.rotation.y -= 0.0005;
 			
 			tickSolarPanelArray(dragonSpaceship.solarPanelArrays[0]);
 			tickSolarPanelArray(dragonSpaceship.solarPanelArrays[1]);

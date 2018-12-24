@@ -382,6 +382,28 @@ async function init() {
 
 	var globalTimer = 0;
 	
+	//Model Experimentation
+	gltfLoader.load("objects/node.glb", (gltf) => {
+		//gltf.scene.rotation.x = Math.PI/2;
+		//gltf.scene.scale.x = gltf.scene.scale.y = gltf.scene.scale.z = 0.997;
+		gltf.scene.position.y = 16;
+		scene.add(gltf.scene);
+	});		
+	
+	gltfLoader.load("objects/nodeRing.glb", (gltf) => {
+		//gltf.scene.rotation.x = Math.PI/2;
+		//gltf.scene.scale.x = gltf.scene.scale.y = gltf.scene.scale.z = 0.997;
+		gltf.scene.position.y = 16;
+		scene.add(gltf.scene);
+	});		
+	
+	gltfLoader.load("objects/nodeHatch.glb", (gltf) => {
+		//gltf.scene.rotation.x = Math.PI/2;
+		//gltf.scene.scale.x = gltf.scene.scale.y = gltf.scene.scale.z = 0.997;
+		gltf.scene.position.y = 16;
+		scene.add(gltf.scene);
+	});	
+	
 	function tick() {
 		globalTimer++;
 
